@@ -4,6 +4,7 @@ import os
 import signal
 
 started = False
+process0 = None
 
 while True:
     if not started:
@@ -12,4 +13,4 @@ while True:
         process0 = subprocess.Popen("emacs RET -batch -l dunnet", shell=True, stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
     else:
         time.sleep(2)
-        subprocess.Popen("go east",shell=True)
+        process0.communicate("go east")
