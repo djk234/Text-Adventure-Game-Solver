@@ -2,36 +2,86 @@ import subprocess
 import time
 import os
 import signal
+import random
+
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
 import pexpect
 
-started = False
 engine = None
 
+# A set of predefined commands that the solver would expect to be 
+# in an arbitrary text adventure game.
+Commands = [
+	"look",
+	"go",
+	"take",
+	"drop",
+	"score"
+]
 
+# A set of predefined directions that would be expected in a game.
+Directions = [
+	"north",
+	"south",
+	"east",
+	"west"
+]
+
+
+# Main class for the solver. It will store several pieces of information, such as:
+# 	1. Instructions passed in
+#	2. Game engine instance to be communicated with
+#	3. Game map
+#	4. Item map
+# 	5. Current score
+# 	6. Commands
+# 	7. Directions
+#  ... anything else we need as we go.
 class Solver(object):
 
 	def __init__(self, instructions):
 		self.instructions = instructions
 		self.engine = None
+		self.game_map = None
+		self.item_map = None
+		self.score = 0
+		self.commands = dict()
+		self.directions = Directions
+    	
+    # Populates commands with the commands themselves and the initial possible inputs
+	def populate_initial_commands(self):
+		self.commands[Commands[0]] = [""]
+		self.commands[Commands[1]] = Directions
+		self.commands[Commands[2]] = [""]
+		self.commands[Commands[3]] = [""]
+
+	# Procedure that inputs a random command to the game
+	def random_command(self):
+		cmd1 = random.choice(self.commands.keys())
+		cmd2 = random.choice(self.commands[cmd1])
+		cmd = cmd1 + " " + cmd2
+		self.engine.sendline(cmd)
 
 
-	def spawn_solver(self):
-		while True:
-    		if not started:
-        		print "Starting..."
-        		started = True
-        		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
-    		else:
-        		time.sleep(2)
-        		self.engine.sendline("go east")
+	# Main loop for the solver to play the game
+    def game_loop(self):
+    	while True:
+    		self.random_command()
+
+    # Spawns the solver and game subprocess using pexpect
+    def spawn_solver(self):
+        print "Starting..."
+        self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
+        self.populate_initial_commands()
+        self.game_loop()
+
 
 
 
 def main():
 	instr = raw_input("Enter instructions for solver: ")
-	Solver = Solver(None, instr)
+	Solver = Solver(instr)
 	Solver.spawn_solver()
 
 
