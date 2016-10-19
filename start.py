@@ -1,3 +1,9 @@
+# Main file for the solver.
+# Authors: 
+# Will Ronchetti wrr33@cornell.edu
+# David Karabinos djk234@cornell.edu
+
+
 import subprocess
 import time
 import os
@@ -75,8 +81,6 @@ class Solver(object):
         self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
         self.populate_initial_commands()
         self.game_loop()
-
-
 
 
 def main():
