@@ -31,7 +31,11 @@ Directions = [
 	"north",
 	"south",
 	"east",
-	"west"
+	"west",
+	"northwest",
+	"northeast",
+	"southwest",
+	"southeast"
 ]
 
 
@@ -51,6 +55,7 @@ class Solver(object):
 		self.engine = None
 		self.game_map = None
 		self.item_map = None
+		self.room_description = ""
 		self.score = 0
 		self.commands = dict()
 		self.directions = Directions
@@ -59,23 +64,47 @@ class Solver(object):
 	def populate_initial_commands(self):
 		self.commands[Commands[0]] = [""]
 		self.commands[Commands[1]] = Directions
-		self.commands[Commands[2]] = [""]
-		self.commands[Commands[3]] = [""]
+		self.commands[Commands[2]] = []
+		self.commands[Commands[3]] = []
+
+	# Searches the description of the room for any possible items, we need to
+	# make sure it is only taking available things (ie. read the response of the take)
+	def search_possible_items(self, description):
+		words = description.split()
+		if ("here." in words):
+			item = words[words.index("here.")-1]
+			if (item not in self.commands["take"]):
+				self.commands["take"].append(item)
 
 	# Procedure that inputs a random command to the game
 	def random_command(self):
 		cmd1 = random.choice(self.commands.keys())
-		cmd2 = random.choice(self.commands[cmd1])
+		if (len(self.commands[cmd1]) == 0):
+			cmd2 = ""
+		else:
+			cmd2 = random.choice(self.commands[cmd1])
+		print(self.commands[cmd1])
 		cmd = cmd1 + " " + cmd2
 		self.engine.sendline(cmd)
 		self.engine.expect(cmd)
-		print(self.engine.before)
+		response = self.engine.before
+		if (cmd1 == "look"):
+			self.search_possible_items(response)
+		print(response)
 		print(cmd)
+		# Taking/dropping an object will add/remove that object from the inventory
+		if (cmd1 == "take" and response.find("Taken.") != -1):
+			self.commands["take"].remove(cmd2)
+			self.commands["drop"].append(cmd2)
+		elif (cmd1 == "drop" and response.find("Done.") != -1):
+			self.commands["drop"].remove(cmd2)
+			self.commands["take"].append(cmd2)
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
 		while True:
 			self.random_command()
+			print(self.commands)
 
     # Spawns the solver and game subprocess using pexpect
 	def spawn_solver(self):
