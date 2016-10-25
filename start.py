@@ -1,5 +1,5 @@
 # Main file for the solver.
-# Authors: 
+# Authors:
 # Will Ronchetti wrr33@cornell.edu
 # David Karabinos djk234@cornell.edu
 
@@ -16,7 +16,7 @@ import pexpect
 
 engine = None
 
-# A set of predefined commands that the solver would expect to be 
+# A set of predefined commands that the solver would expect to be
 # in an arbitrary text adventure game.
 Commands = [
 	"look",
@@ -54,7 +54,7 @@ class Solver(object):
 		self.score = 0
 		self.commands = dict()
 		self.directions = Directions
-    	
+
     # Populates commands with the commands themselves and the initial possible inputs
 	def populate_initial_commands(self):
 		self.commands[Commands[0]] = [""]
@@ -68,25 +68,27 @@ class Solver(object):
 		cmd2 = random.choice(self.commands[cmd1])
 		cmd = cmd1 + " " + cmd2
 		self.engine.sendline(cmd)
-
+		self.engine.expect(cmd)
+		print(self.engine.before)
+		print(cmd)
 
 	# Main loop for the solver to play the game
-    def game_loop(self):
-    	while True:
-    		self.random_command()
+	def game_loop(self):
+		while True:
+			self.random_command()
 
     # Spawns the solver and game subprocess using pexpect
-    def spawn_solver(self):
-        print "Starting..."
-        self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
-        self.populate_initial_commands()
-        self.game_loop()
+	def spawn_solver(self):
+		print "Starting..."
+		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
+		self.populate_initial_commands()
+		self.game_loop()
 
 
 def main():
 	instr = raw_input("Enter instructions for solver: ")
-	Solver = Solver(instr)
-	Solver.spawn_solver()
+	Tagsolver = Solver(instr)
+	Tagsolver.spawn_solver()
 
 
 
