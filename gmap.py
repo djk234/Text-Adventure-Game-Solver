@@ -1,5 +1,5 @@
 # File for the map class
-# Authors: 
+# Authors:
 # Will Ronchetti wrr33@cornell.edu
 # David Karabinos djk234@cornell.edu
 
@@ -45,7 +45,7 @@ class GRoom(object):
 	# location is in room self.
 	def insert_item(self, item):
 		self.local_items.append(item)
-    
+
     # Returns a list of items currently in the room.
 	def get_items(self):
 		return self.local_items
@@ -55,7 +55,11 @@ class GRoom(object):
 	def insert_treasure_iteim(self, item):
 		self.treasure_items.append(item)
 
-
+	# Easy informative and infoto read print of the room
+	def print_room(self):
+		print(self.name)
+		print(self.adjencies)
+		print(self.local_items)
 
 
 # Class for the Game Map. The Map itself is constructed by the solver
@@ -63,23 +67,33 @@ class GRoom(object):
 # of the matrix have identifiers indicating the direction needed to traverse
 # into the room - this identifier is stored in the room class, since direction
 # is relative to the current room
-# 
+#
 # 					east->		   east->
 # 			room1 <------> room2 <------> room3
 # 			  |								|
 # 			  | 							|	north
 # 			  |		east->			east->	|
 #			room4 <-----> room5 <---------->
-# 
+#
 class GameMap(object):
 
 	def __init__(self):
-		# TO DO
+		self.current_room = None
+		self.room_list = []
 
+	# Updates current room to room
+	def update_current(self, new_room):
+		self.current_room = new_room
+		names = [room.name for room in self.room_list]
+		if (new_room.name not in names):
+			self.room_list.append(new_room)
 
+	# Returns the current room
+	def get_current(self):
+		return self.current_room
 
-
-
-
-
-
+	# Prints all of the room information for all of the rooms on the map
+	def print_map(self):
+		print("Rooms:")
+		for room in self.room_list:
+			room.print_room()

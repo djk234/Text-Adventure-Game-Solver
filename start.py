@@ -9,6 +9,7 @@ import time
 import os
 import signal
 import random
+import gmap
 
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
@@ -38,6 +39,16 @@ Directions = [
 	"southeast"
 ]
 
+Opp_Directions = [
+	"south",
+	"north",
+	"west",
+	"east",
+	"southeast",
+	"southwest",
+	"northeast",
+	"northwest"
+]
 
 # Main class for the solver. It will store several pieces of information, such as:
 # 	1. Instructions passed in
@@ -55,6 +66,7 @@ class Solver(object):
 		self.engine = None
 		self.game_map = None
 		self.item_map = None
+		self.last_command = ""
 		self.room_description = ""
 		self.score = 0
 		self.commands = dict()
@@ -77,8 +89,31 @@ class Solver(object):
 				self.commands["take"].append(item)
 
 	# Will remove items from the command list based on response
-	def remove_item(self, response, item, command):
-		return
+	# Taking/dropping an object will add/remove that object from the inventory
+	def take_drop(self, response):
+		if (self.last_command.find("take") != -1 and response.find("Taken.") != -1):
+			direct_obj = self.last_command.split("take ")
+			if (len(direct_obj) > 1):
+				direct_obj = direct_obj[1]
+			else:
+				direct_obj = direct_obj[0]
+			print(direct_obj)
+			self.commands["take"].remove(direct_obj)
+			self.commands["drop"].append(direct_obj)
+		elif (self.last_command.find("drop") != -1 and response.find("Done.") != -1):
+			direct_obj = self.last_command.split("drop ")
+			if (len(direct_obj) > 1):
+				direct_obj = direct_obj[1]
+			else:
+				direct_obj = direct_obj[0]
+			self.commands["drop"].remove(direct_obj)
+			self.commands["take"].append(direct_obj)
+
+	# Sends the command and returns the response
+	def send_command(self, cmd):
+		self.engine.sendline(cmd)
+		self.engine.expect(">"+cmd)
+		return self.engine.before
 
 	# Procedure that inputs a random command to the game
 	def random_command(self):
@@ -89,25 +124,39 @@ class Solver(object):
 			cmd2 = random.choice(self.commands[cmd1])
 		cmd = cmd1 + " " + cmd2
 		self.engine.sendline(cmd)
-		self.engine.expect(cmd)
+		self.engine.expect(">"+cmd)
 		response = self.engine.before
-		if (cmd1 == "look"):
+		if (self.last_command.find("look") != -1):
 			self.search_possible_items(response)
 		print(response)
 		print(cmd)
-		# Taking/dropping an object will add/remove that object from the inventory
-		if (cmd1 == "take" and response.find("Taken.") != -1):
-			self.commands["take"].remove(cmd2)
-			self.commands["drop"].append(cmd2)
-		elif (cmd1 == "drop" and response.find("Done.") != -1):
-			self.commands["drop"].remove(cmd2)
-			self.commands["take"].append(cmd2)
+		self.take_drop(response)
+		self.last_command = cmd
+
+	# Loops through the available directions
+	def direction_loop(self):
+		for direction in Directions:
+			response = self.send_command("go "+direction)
+
+	# Sends sequential moves to find neighboring rooms
+	def sequential_command(self):
+		# Initial "look" to get the name of the room (should be unnecessary)
+		response = self.send_command("look")
+		print(response)
+		print("look")
+		room_name = response.split("\n")[1]
+		new_room = gmap.GRoom(room_name)
+		self.last_command = "look"
+		self.game_map.update_current(new_room)
+		# Will loop through the directions to find neighbor rooms
+		# self.direction_loop()
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
 		while True:
-			self.random_command()
-			print(self.commands)
+			time.sleep(1)
+			self.sequential_command()
+			# print(self.commands)
 
     # Spawns the solver and game subprocess using pexpect
 	def spawn_solver(self):
@@ -119,7 +168,10 @@ class Solver(object):
 
 def main():
 	instr = raw_input("Enter instructions for solver: ")
+	game_map = gmap.GameMap()
+	game_map.print_map()
 	Tagsolver = Solver(instr)
+	Tagsolver.game_map = game_map
 	Tagsolver.spawn_solver()
 
 
