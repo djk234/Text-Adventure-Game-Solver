@@ -25,9 +25,9 @@ class GItem(object):
 # and items that belong in this room to increase the score.
 class GRoom(object):
 
-	def __init__(self, name, adjencies=None, local_items = None, treasure_items = None):
+	def __init__(self, name, local_items = None, treasure_items = None):
 		self.name = name
-		self.adjencies = adjencies
+		self.adjencies = dict()
 		self.local_items = local_items
 		self.treasure_items = treasure_items
 
@@ -58,8 +58,11 @@ class GRoom(object):
 	# Easy informative and infoto read print of the room
 	def print_room(self):
 		print(self.name)
-		print(self.adjencies)
+		directions = self.get_directions()
+		for direction in directions:
+			print(direction+": "+self.adjencies[direction].name)
 		print(self.local_items)
+		print("")
 
 
 # Class for the Game Map. The Map itself is constructed by the solver
@@ -81,12 +84,25 @@ class GameMap(object):
 		self.current_room = None
 		self.room_list = []
 
+	# Returns true if the room has been discovered
+	def check_room(self, room_name):
+		names = [room.name for room in self.room_list]
+		return room_name in names
+
 	# Updates current room to room
 	def update_current(self, new_room):
 		self.current_room = new_room
 		names = [room.name for room in self.room_list]
 		if (new_room.name not in names):
 			self.room_list.append(new_room)
+
+	# Adds new room to the list without updating current, or updates the room with new adjencies
+	def add_room(self, new_room):
+		names = [room.name for room in self.room_list]
+		if (new_room.name not in names):
+			self.room_list.append(new_room)
+		else:
+			self.room_list[names.index(new_room.name)] = new_room
 
 	# Returns the current room
 	def get_current(self):

@@ -112,7 +112,7 @@ class Solver(object):
 	# Sends the command and returns the response
 	def send_command(self, cmd):
 		self.engine.sendline(cmd)
-		self.engine.expect(">"+cmd)
+		self.engine.expect(">")
 		return self.engine.before
 
 	# Procedure that inputs a random command to the game
@@ -135,33 +135,54 @@ class Solver(object):
 
 	# Loops through the available directions
 	def direction_loop(self):
-		for direction in Directions:
-			response = self.send_command("go "+direction)
+		for i in range (len(Directions)):
+			response = self.send_command("go "+Directions[i])
+			print(response)
+			last_command = "go "+Directions[i]
+			if ("You can't go that way" not in response):
+				words = response.split("\r\n")
+				room_name = words[1]
+				new_room = gmap.GRoom(room_name)
+				new_room.insert_adjency(self.game_map.current_room,Opp_Directions[i])
+				self.game_map.current_room.insert_adjency(new_room,Directions[i])
+				self.game_map.add_room(self.game_map.current_room)
+				self.game_map.add_room(new_room)
+				response = self.send_command("go "+Opp_Directions[i])
+				print(response)
+				last_command = "go "+Opp_Directions[i]
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
 		# Initial "look" to get the name of the room (should be unnecessary)
 		response = self.send_command("look")
 		print(response)
-		print("look")
-		room_name = response.split("\n")[1]
+		room_name = response.split("\r\n")[1]
 		new_room = gmap.GRoom(room_name)
 		self.last_command = "look"
 		self.game_map.update_current(new_room)
 		# Will loop through the directions to find neighbor rooms
-		# self.direction_loop()
+		self.direction_loop()
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
-		while True:
-			time.sleep(1)
+		self.sequential_command()
+		self.game_map.print_map()
+		for direction in self.game_map.get_current().get_directions():
+			response = self.send_command("go "+direction)
+			print(response)
+			self.game_map.update_current(self.game_map.get_current().adjencies[direction])
 			self.sequential_command()
-			# print(self.commands)
+			self.game_map.print_map()
+			opp_direction = Opp_Directions[Directions.index(direction)]
+			response = self.send_command("go "+opp_direction)
+			print(response)
 
     # Spawns the solver and game subprocess using pexpect
 	def spawn_solver(self):
 		print "Starting..."
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
+		self.engine.expect(">")
+		print(self.engine.before)
 		self.populate_initial_commands()
 		self.game_loop()
 
