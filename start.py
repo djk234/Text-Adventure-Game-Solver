@@ -143,9 +143,9 @@ class Solver(object):
 				words = response.split("\r\n")
 				room_name = words[1]
 				new_room = gmap.GRoom(room_name)
-				new_room.insert_adjency(self.game_map.current_room,Opp_Directions[i])
-				self.game_map.current_room.insert_adjency(new_room,Directions[i])
-				self.game_map.add_room(self.game_map.current_room)
+				new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
+				self.game_map.get_current().insert_adjency(new_room,Directions[i])
+				self.game_map.add_room(self.game_map.get_current())
 				self.game_map.add_room(new_room)
 				response = self.send_command("go "+Opp_Directions[i])
 				print(response)

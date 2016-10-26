@@ -92,9 +92,7 @@ class GameMap(object):
 	# Updates current room to room
 	def update_current(self, new_room):
 		self.current_room = new_room
-		names = [room.name for room in self.room_list]
-		if (new_room.name not in names):
-			self.room_list.append(new_room)
+		self.add_room(new_room)
 
 	# Adds new room to the list without updating current, or updates the room with new adjencies
 	def add_room(self, new_room):
