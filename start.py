@@ -10,13 +10,15 @@ import os
 import signal
 import random
 import gmap
-
+import turtle
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
 import pexpect
 
 engine = None
 
+Circle_Radius = 10
+Path_Length = 50
 # A set of predefined commands that the solver would expect to be
 # in an arbitrary text adventure game.
 Commands = [
@@ -37,6 +39,10 @@ Directions = [
 	"northeast",
 	"southwest",
 	"southeast"
+]
+
+Headings = [
+	90,270,0,180,135,45,225,315
 ]
 
 Opp_Directions = [
@@ -63,6 +69,7 @@ class Solver(object):
 
 	def __init__(self, instructions):
 		self.instructions = instructions
+		self.pen = None
 		self.engine = None
 		self.game_map = None
 		self.item_map = None
@@ -133,20 +140,36 @@ class Solver(object):
 		self.take_drop(response)
 		self.last_command = cmd
 
+	def draw_new_room(self, index, draw_circles):
+		self.pen.pendown()
+		self.pen.setheading(Headings[index])
+		self.pen.forward(Path_Length)
+		self.pen.penup()
+		if draw_circles:
+			self.pen.sety(self.pen.ycor()-Circle_Radius)
+			self.pen.pendown()
+			self.pen.circle(Circle_Radius)
+			self.pen.penup()
+			self.pen.sety(self.pen.ycor()+Circle_Radius)
+		self.pen.setheading(Headings[index]-180)
+		self.pen.forward(Path_Length)
+
 	# Loops through the available directions
 	def direction_loop(self):
 		for i in range (len(Directions)):
+			time.sleep(1)
 			response = self.send_command("go "+Directions[i])
 			print(response)
 			last_command = "go "+Directions[i]
-			if ("You can't go that way" not in response):
+			if ("You can't go that way." not in response):
 				words = response.split("\r\n")
 				room_name = words[1]
 				new_room = gmap.GRoom(room_name)
 				new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
 				self.game_map.get_current().insert_adjency(new_room,Directions[i])
 				self.game_map.add_room(self.game_map.get_current())
-				self.game_map.add_room(new_room)
+				draw = self.game_map.add_room(new_room)
+				self.draw_new_room(i,draw)
 				response = self.send_command("go "+Opp_Directions[i])
 				print(response)
 				last_command = "go "+Opp_Directions[i]
@@ -169,26 +192,45 @@ class Solver(object):
 		self.game_map.print_map()
 		for direction in self.game_map.get_current().get_directions():
 			response = self.send_command("go "+direction)
+			self.pen.setheading(Headings[Directions.index(direction)])
+			self.pen.forward(Path_Length)
 			print(response)
 			self.game_map.update_current(self.game_map.get_current().adjencies[direction])
+			print "Current: ",
+			print self.game_map.get_current().name
 			self.sequential_command()
 			self.game_map.print_map()
 			opp_direction = Opp_Directions[Directions.index(direction)]
 			response = self.send_command("go "+opp_direction)
+			self.pen.setheading(Headings[Directions.index(opp_direction)])
+			self.pen.forward(Path_Length)
+			self.game_map.update_current(self.game_map.get_current().adjencies[opp_direction])
+			print "Current: ",
+			print self.game_map.get_current().name
 			print(response)
 
     # Spawns the solver and game subprocess using pexpect
 	def spawn_solver(self):
 		print "Starting..."
+		self.pen = turtle.Turtle()
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
 		self.engine.expect(">")
 		print(self.engine.before)
+		self.pen.pencolor("red")
+		self.pen.penup()
+		self.pen.sety(self.pen.ycor()-Circle_Radius)
+		self.pen.pendown()
+		self.pen.circle(Circle_Radius)
+		self.pen.penup()
+		self.pen.sety(self.pen.ycor()+Circle_Radius)
 		self.populate_initial_commands()
 		self.game_loop()
+		time.sleep(10)
 
 
 def main():
 	instr = raw_input("Enter instructions for solver: ")
+	wn = turtle.Screen()
 	game_map = gmap.GameMap()
 	game_map.print_map()
 	Tagsolver = Solver(instr)

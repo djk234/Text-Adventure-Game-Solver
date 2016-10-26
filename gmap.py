@@ -99,8 +99,10 @@ class GameMap(object):
 		names = [room.name for room in self.room_list]
 		if (new_room.name not in names):
 			self.room_list.append(new_room)
+			return True
 		else:
 			self.room_list[names.index(new_room.name)] = new_room
+			return False
 
 	# Returns the current room
 	def get_current(self):
