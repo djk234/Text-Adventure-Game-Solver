@@ -71,10 +71,14 @@ class Solver(object):
 	# make sure it is only taking available things (ie. read the response of the take)
 	def search_possible_items(self, description):
 		words = description.split()
-		if ("here." in words):
+		if ("here." in words and "There is " in description):
 			item = words[words.index("here.")-1]
 			if (item not in self.commands["take"]):
 				self.commands["take"].append(item)
+
+	# Will remove items from the command list based on response
+	def remove_item(self, response, item, command):
+		return
 
 	# Procedure that inputs a random command to the game
 	def random_command(self):
@@ -83,7 +87,6 @@ class Solver(object):
 			cmd2 = ""
 		else:
 			cmd2 = random.choice(self.commands[cmd1])
-		print(self.commands[cmd1])
 		cmd = cmd1 + " " + cmd2
 		self.engine.sendline(cmd)
 		self.engine.expect(cmd)
