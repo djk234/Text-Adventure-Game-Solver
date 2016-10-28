@@ -30,6 +30,7 @@ class GRoom(object):
 		self.adjencies = dict()
 		self.local_items = local_items
 		self.treasure_items = treasure_items
+		self.mapped = False 
 
 	# Procedure that adds a new adjency edge to the room
 	def insert_adjency(self, new_room, direction):
@@ -45,6 +46,10 @@ class GRoom(object):
 	# location is in room self.
 	def insert_item(self, item):
 		self.local_items.append(item)
+
+	# Indicates that a room has been mapped and should not be mapped again.
+	def set_mapped(self):
+		self.mapped = True
 
     # Returns a list of items currently in the room.
 	def get_items(self):
