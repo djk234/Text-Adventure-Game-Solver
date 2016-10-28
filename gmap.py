@@ -28,9 +28,8 @@ class GRoom(object):
 	def __init__(self, name, local_items = None, treasure_items = None):
 		self.name = name
 		self.adjencies = dict()
-		self.local_items = local_items
-		self.treasure_items = treasure_items
-		self.mapped = False 
+		self.items = []
+		self.mapped = False
 
 	# Procedure that adds a new adjency edge to the room
 	def insert_adjency(self, new_room, direction):
@@ -45,7 +44,7 @@ class GRoom(object):
 	# Appends item to the items currently in the room, indicating that an items current
 	# location is in room self.
 	def insert_item(self, item):
-		self.local_items.append(item)
+		self.items.append(item)
 
 	# Indicates that a room has been mapped and should not be mapped again.
 	def set_mapped(self):
@@ -53,12 +52,7 @@ class GRoom(object):
 
     # Returns a list of items currently in the room.
 	def get_items(self):
-		return self.local_items
-
-	# Done if the item has been dropped in the correct treasure room, and updates
-	# the room object to indicate so.
-	def insert_treasure_iteim(self, item):
-		self.treasure_items.append(item)
+		return self.items
 
 	# Easy informative and infoto read print of the room
 	def print_room(self):
@@ -66,7 +60,8 @@ class GRoom(object):
 		directions = self.get_directions()
 		for direction in directions:
 			print(direction+": "+self.adjencies[direction].name)
-		print(self.local_items)
+		print(self.items)
+		print(self.mapped)
 		print("")
 
 

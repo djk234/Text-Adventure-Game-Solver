@@ -78,6 +78,7 @@ class Solver(object):
 		self.score = 0
 		self.commands = dict()
 		self.directions = Directions
+		self.inventory = []
 
     # Populates commands with the commands themselves and the initial possible inputs
 	def populate_initial_commands(self):
@@ -95,26 +96,27 @@ class Solver(object):
 			if (item not in self.commands["take"]):
 				self.commands["take"].append(item)
 
-	# Will remove items from the command list based on response
-	# Taking/dropping an object will add/remove that object from the inventory
-	def take_drop(self, response):
-		if (self.last_command.find("take") != -1 and response.find("Taken.") != -1):
-			direct_obj = self.last_command.split("take ")
-			if (len(direct_obj) > 1):
-				direct_obj = direct_obj[1]
-			else:
-				direct_obj = direct_obj[0]
-			print(direct_obj)
-			self.commands["take"].remove(direct_obj)
-			self.commands["drop"].append(direct_obj)
-		elif (self.last_command.find("drop") != -1 and response.find("Done.") != -1):
-			direct_obj = self.last_command.split("drop ")
-			if (len(direct_obj) > 1):
-				direct_obj = direct_obj[1]
-			else:
-				direct_obj = direct_obj[0]
-			self.commands["drop"].remove(direct_obj)
-			self.commands["take"].append(direct_obj)
+	# Will take items and add them to the Solver's inventory
+	def take(self, response):
+		words = response.split()
+		for word in words:
+			response = self.send_command("take "+word)
+			print response
+			if ("Taken." in response):
+				new_item = gmap.GItem(word,self.game_map.get_current().name)
+				self.inventory.append(new_item)
+
+	def drop(self, item):
+		response = self.send_command("drop "+item.name)
+		print response
+		words = response.split()
+		if ("Done." in words[len(words)-1]):
+			response = self.send_command("take "+item.name)
+			print response
+		else:
+			response = self.send_command("look")
+			print response
+			self.take(response)
 
 	# Sends the command and returns the response
 	def send_command(self, cmd):
@@ -151,67 +153,70 @@ class Solver(object):
 			self.pen.pencolor("black")
 			self.pen.write(name,align="center")
 			self.pen.pencolor("red")
+			old_heading = self.pen.heading()
+			self.pen.setheading(0)
 			self.pen.circle(Circle_Radius)
+			self.pen.setheading(old_heading)
 			self.pen.penup()
 			self.pen.sety(self.pen.ycor()+Circle_Radius)
-		self.pen.setheading(Headings[index]-180)
+		turn = Headings[index]-180
+		if (Headings[index]-180) < 0:
+			turn += 360
+		self.pen.setheading(turn)
 		self.pen.forward(Path_Length)
 
 	# Loops through the available directions
 	def direction_loop(self):
 		for i in range (len(Directions)):
-			time.sleep(1)
-			response = self.send_command("go "+Directions[i])
-			print(response)
-			last_command = "go "+Directions[i]
-			if ("You can't go that way." not in response):
-				words = response.split("\r\n")
-				room_name = words[1]
-				new_room = gmap.GRoom(room_name)
-				new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
-				self.game_map.get_current().insert_adjency(new_room,Directions[i])
-				self.game_map.add_room(self.game_map.get_current())
-				draw = self.game_map.add_room(new_room)
-				self.draw_new_room(i,draw,room_name)
-				response = self.send_command("go "+Opp_Directions[i])
+			if (Directions[i] not in self.game_map.get_current().adjencies):
+				response = self.send_command("go "+Directions[i])
 				print(response)
-				last_command = "go "+Opp_Directions[i]
+				last_command = "go "+Directions[i]
+				if ("You can't go that way." not in response and "You don't have a key that can open this door." not in response):
+					words = response.split("\r\n")
+					room_name = words[1]
+					new_room = gmap.GRoom(room_name)
+					new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
+					self.game_map.get_current().insert_adjency(new_room,Directions[i])
+					self.game_map.add_room(self.game_map.get_current())
+					draw = self.game_map.add_room(new_room)
+					self.draw_new_room(i,draw,room_name)
+					response = self.send_command("go "+Opp_Directions[i])
+					print(response)
+					last_command = "go "+Opp_Directions[i]
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
 		# Initial "look" to get the name of the room (should be unnecessary)
 		response = self.send_command("look")
 		print(response)
-		room_name = response.split("\r\n")[1]
-		new_room = gmap.GRoom(room_name)
 		self.last_command = "look"
-		self.game_map.update_current(new_room)
+		self.take(response)
+		for item in self.inventory:
+			self.drop(item)
 		# Will loop through the directions to find neighbor rooms
-		self.direction_loop()
 		self.game_map.get_current().set_mapped()
+		self.direction_loop()
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
 		self.sequential_command()
-		self.game_map.print_map()
-		for direction in self.game_map.get_current().get_directions():
-			response = self.send_command("go "+direction)
-			self.pen.setheading(Headings[Directions.index(direction)])
-			self.pen.forward(Path_Length)
-			print(response)
-			self.game_map.update_current(self.game_map.get_current().adjencies[direction])
-			print "Current: ",
-			print self.game_map.get_current().name
-			self.sequential_command()
-			self.game_map.print_map()
-			opp_direction = Opp_Directions[Directions.index(direction)]
-			response = self.send_command("go "+opp_direction)
-			self.pen.setheading(Headings[Directions.index(opp_direction)])
-			self.pen.forward(Path_Length)
-			self.game_map.update_current(self.game_map.get_current().adjencies[opp_direction])
-			print "Current: ",
-			print self.game_map.get_current().name
-			print(response)
+		old_room = self.game_map.get_current()
+		for direction in old_room.get_directions():
+			if not self.game_map.get_current().adjencies[direction].mapped:
+				response = self.send_command("go "+direction)
+				self.pen.setheading(Headings[Directions.index(direction)])
+				self.pen.forward(Path_Length)
+				print(response)
+				self.game_map.update_current(self.game_map.get_current().adjencies[direction])
+				self.game_loop()
+				self.game_map.print_map()
+				opp_direction = Opp_Directions[Directions.index(direction)]
+				response = self.send_command("go "+opp_direction)
+				self.pen.setheading(Headings[Directions.index(opp_direction)])
+				self.pen.forward(Path_Length)
+				self.game_map.update_current(self.game_map.get_current().adjencies[opp_direction])
+				print(response)
 
     # Spawns the solver and game subprocess using pexpect
 	def spawn_solver(self):
@@ -220,6 +225,7 @@ class Solver(object):
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
 		self.engine.expect(">")
 		print(self.engine.before)
+		self.pen.speed("fast")
 		self.pen.pencolor("red")
 		self.pen.penup()
 		self.pen.sety(self.pen.ycor()-Circle_Radius)
@@ -228,6 +234,9 @@ class Solver(object):
 		self.pen.penup()
 		self.pen.sety(self.pen.ycor()+Circle_Radius)
 		self.populate_initial_commands()
+		room_name = "Dead end"
+		new_room = gmap.GRoom(room_name)
+		self.game_map.update_current(new_room)
 		self.game_loop()
 		time.sleep(10)
 
