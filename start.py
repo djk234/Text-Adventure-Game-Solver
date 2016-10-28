@@ -140,7 +140,7 @@ class Solver(object):
 		self.take_drop(response)
 		self.last_command = cmd
 
-	def draw_new_room(self, index, draw_circles):
+	def draw_new_room(self, index, draw_circles, name):
 		self.pen.pendown()
 		self.pen.setheading(Headings[index])
 		self.pen.forward(Path_Length)
@@ -148,6 +148,9 @@ class Solver(object):
 		if draw_circles:
 			self.pen.sety(self.pen.ycor()-Circle_Radius)
 			self.pen.pendown()
+			self.pen.pencolor("black")
+			self.pen.write(name,align="center")
+			self.pen.pencolor("red")
 			self.pen.circle(Circle_Radius)
 			self.pen.penup()
 			self.pen.sety(self.pen.ycor()+Circle_Radius)
@@ -169,7 +172,7 @@ class Solver(object):
 				self.game_map.get_current().insert_adjency(new_room,Directions[i])
 				self.game_map.add_room(self.game_map.get_current())
 				draw = self.game_map.add_room(new_room)
-				self.draw_new_room(i,draw)
+				self.draw_new_room(i,draw,room_name)
 				response = self.send_command("go "+Opp_Directions[i])
 				print(response)
 				last_command = "go "+Opp_Directions[i]
@@ -185,6 +188,7 @@ class Solver(object):
 		self.game_map.update_current(new_room)
 		# Will loop through the directions to find neighbor rooms
 		self.direction_loop()
+		self.game_map.get_current().set_mapped()
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
