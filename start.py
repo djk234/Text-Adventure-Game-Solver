@@ -116,6 +116,7 @@ class Solver(object):
 		else:
 			response = self.send_command("look")
 			print response
+			self.inventory.remove(item)
 			self.take(response)
 
 	# Sends the command and returns the response
@@ -175,15 +176,18 @@ class Solver(object):
 				if ("You can't go that way." not in response and "You don't have a key that can open this door." not in response):
 					words = response.split("\r\n")
 					room_name = words[1]
-					new_room = gmap.GRoom(room_name)
-					new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
-					self.game_map.get_current().insert_adjency(new_room,Directions[i])
-					self.game_map.add_room(self.game_map.get_current())
-					draw = self.game_map.add_room(new_room)
-					self.draw_new_room(i,draw,room_name)
-					response = self.send_command("go "+Opp_Directions[i])
-					print(response)
-					last_command = "go "+Opp_Directions[i]
+					if (not self.game_map.check_adj_room(self.game_map.get_current(),room_name)):
+						new_room = gmap.GRoom(room_name)
+						new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
+						self.game_map.get_current().insert_adjency(new_room,Directions[i])
+						self.game_map.add_room(self.game_map.get_current())
+						draw = self.game_map.add_room(new_room)
+						self.draw_new_room(i,draw,room_name)
+						response = self.send_command("go "+Opp_Directions[i])
+						print(response)
+						last_command = "go "+Opp_Directions[i]
+					else:
+						self.pen.setpos(self.game_map.get_current().pos[0],self.game_map.get_current().pos[1])
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
@@ -196,7 +200,30 @@ class Solver(object):
 			self.drop(item)
 		# Will loop through the directions to find neighbor rooms
 		self.game_map.get_current().set_mapped()
+		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
 		self.direction_loop()
+
+	# Traverses the map and tries dropping items everywhere
+	def traverse_map(self):
+		self.game_map.get_current().traversed = True
+		self.direction_loop()
+		for item in self.inventory:
+			self.drop(item)
+		old_room = self.game_map.get_current()
+		for direction in old_room.get_directions():
+			if (not self.game_map.get_current().adjencies[direction].traversed):
+				response = self.send_command("go "+direction)
+				self.pen.setheading(Headings[Directions.index(direction)])
+				self.pen.forward(Path_Length)
+				print(response)
+				self.game_map.update_current(self.game_map.get_current().adjencies[direction])
+				self.traverse_map()
+				opp_direction = Opp_Directions[Directions.index(direction)]
+				response = self.send_command("go "+opp_direction)
+				self.pen.setheading(Headings[Directions.index(opp_direction)])
+				self.pen.forward(Path_Length)
+				self.game_map.update_current(self.game_map.get_current().adjencies[opp_direction])
+				print(response)
 
 	# Main loop for the solver to play the game
 	def game_loop(self):
@@ -225,7 +252,7 @@ class Solver(object):
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
 		self.engine.expect(">")
 		print(self.engine.before)
-		self.pen.speed("fast")
+		self.pen.speed("fastest")
 		self.pen.pencolor("red")
 		self.pen.penup()
 		self.pen.sety(self.pen.ycor()-Circle_Radius)
@@ -238,6 +265,9 @@ class Solver(object):
 		new_room = gmap.GRoom(room_name)
 		self.game_map.update_current(new_room)
 		self.game_loop()
+		self.game_map.print_map()
+		while True:
+			self.traverse_map()
 		time.sleep(10)
 
 

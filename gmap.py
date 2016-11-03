@@ -30,6 +30,8 @@ class GRoom(object):
 		self.adjencies = dict()
 		self.items = []
 		self.mapped = False
+		self.traversed = False
+		self.pos = []
 
 	# Procedure that adds a new adjency edge to the room
 	def insert_adjency(self, new_room, direction):
@@ -54,6 +56,10 @@ class GRoom(object):
 	def get_items(self):
 		return self.items
 
+	# Sets the room's position
+	def set_pos(self,x,y):
+		self.pos = [x,y]
+
 	# Easy informative and infoto read print of the room
 	def print_room(self):
 		print(self.name)
@@ -62,6 +68,7 @@ class GRoom(object):
 			print(direction+": "+self.adjencies[direction].name)
 		print(self.items)
 		print(self.mapped)
+		print(self.pos)
 		print("")
 
 
@@ -89,6 +96,22 @@ class GameMap(object):
 		names = [room.name for room in self.room_list]
 		return room_name in names
 
+	# Checks if this room is in the adjacency
+	def check_adj_room(self, room, adj_room_name):
+		for direction in room.adjencies:
+			if (room.adjencies[direction].name == adj_room_name):
+				return True
+		return False
+
+	# Returns the room with that room name, returns None otherwise
+	def get_room(self, room_name):
+		names = [room.name for room in self.room_list]
+		if (room_name in names):
+			index = names.index(room_name)
+			if (index != -1):
+				return self.room_list[index]
+			else:
+				return None
 	# Updates current room to room
 	def update_current(self, new_room):
 		self.current_room = new_room
