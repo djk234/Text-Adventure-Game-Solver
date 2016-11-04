@@ -56,6 +56,40 @@ Opp_Directions = [
 	"northwest"
 ]
 
+Hard_Code = "get shovel, look shovel, e, e, dig, look, get cpu, look cpu, se, " \
+"get food, se, look bear, drop food, look, get key, sw, get bracelet, ne, nw, " \
+"nw, ne, ne, ne, e, look bins, w, w, put cpu in computer, type, toukmond, robert, " \
+"ls, uncompress paper.o.Z, exit, look paper, type, ftp gamma, anonymous, toukmond, " \
+"binary, send lamp.o, send shovel.o, send key.o, send  "\
+"bracelet.o, send paper.o, quit, rlogin gamma, worms, get lamp, get "\
+"shovel, get key, get bracelet, get paper, e, n, e, drop shovel, drop key, "\
+"drop bracelet, drop paper, get weight, d, drop weight, nw, u, get "\
+"statuette, look statuette, get floppy, se, d, nw, ne, drop floppy, w, s, "\
+"e, turn dial clockwise, turn dial clockwise, turn dial clockwise, turn "\
+"dial counterclockwise, turn dial counterclockwise, turn dial "\
+"counterclockwise, w, n, e, get life, get shovel, get key, get bracelet, "\
+"get paper, get floppy, d, nw, u, se, d, nw, nw, s, s, s, s, put diamond "\
+"in chute, put bracelet in chute, s, get gold, e, e, s, d, look urinal, "\
+"put gold in urinal, flush, n, sleep, d, sw, e, u, dig, look, get "\
+"platinum, d, w, ne, u, s, put platinum in urinal, flush, n, d, sw, w, d, "\
+"e, get towel, look towel, d, s, s, s, look pc, put floppy in pc, reset, , "\
+"dir, type foo.txt => xxx (combination), exit, n, n, n, n, n, u, look box, "\
+"put key in box, u, u, ne, ne, get axe, d, n, w, xxx (combination), cut "\
+"cable, exit, get key, e, n, get lamp, get license, get silver, w, put "\
+"silver in mail, n, n, e, e, e, e, e, get coins, get egg (in rooms 60 to "\
+"78), w, w, w, w, w, s, s, put egg in mail, put coins in mail, n, n, n, n, "\
+"e, e, e, e, e, look bus, in, s, s, s, w, w, w, w, w, nw, out, n, get "\
+"bone, e, e, get nitric, press switch, n, get glycerine, w, look bone, get "\
+"jar, get ruby, s, w, s, in, se, out, e, e, e, e, n, n, put nitric in jar, "\
+"put glycerine in jar, drop jar, in, n, n, put ruby in disposal, d, get "\
+"amethyst, u, put amethyst in disposal, d, ne, sw, u, u, w, w, s, w, s, "\
+"se, s, e, s, w, type, rlogin endgame, drop license, drop bone, drop key, "\
+"get diamond, get gold, get platinum, get amethyst, n, n, n, n, get bill, "\
+"n, get mona, s, drop bill, drop mona, drop diamond, drop gold, drop "\
+"platinum, drop amethyst, s, s, s, s, get silver, get egg, get coins, get "\
+"ruby, get bracelet, n, n, n, n, n, drop silver, drop egg, drop coins, "\
+"drop ruby, drop bracelet, n, look"\
+
 # Main class for the solver. It will store several pieces of information, such as:
 # 	1. Instructions passed in
 #	2. Game engine instance to be communicated with
@@ -187,7 +221,11 @@ class Solver(object):
 						print(response)
 						last_command = "go "+Opp_Directions[i]
 					else:
+						self.game_map.get_current().print_room()
 						self.pen.setpos(self.game_map.get_current().pos[0],self.game_map.get_current().pos[1])
+						response = self.send_command("go northeast")
+						print(response)
+						last_command = "go northeast"
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
@@ -205,6 +243,8 @@ class Solver(object):
 
 	# Traverses the map and tries dropping items everywhere
 	def traverse_map(self):
+		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
+		self.game_map.get_current().set_mapped()
 		self.game_map.get_current().traversed = True
 		self.direction_loop()
 		for item in self.inventory:
@@ -245,35 +285,47 @@ class Solver(object):
 				self.game_map.update_current(self.game_map.get_current().adjencies[opp_direction])
 				print(response)
 
+	# Follows hard code instructions to win game
+	def solve_game(self):
+		commands = Hard_Code.split(", ")
+		print(commands)
+		for command in commands:
+			if (len(command) > 0):
+				response = self.send_command(command)
+				print response
+
+
     # Spawns the solver and game subprocess using pexpect
+	# Uncomment to run normally and then comment out self.solve_game() call
 	def spawn_solver(self):
 		print "Starting..."
-		self.pen = turtle.Turtle()
+		#self.pen = turtle.Turtle()
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
-		self.engine.expect(">")
+		self.engine.expect([">",":"])
 		print(self.engine.before)
-		self.pen.speed("fastest")
-		self.pen.pencolor("red")
-		self.pen.penup()
-		self.pen.sety(self.pen.ycor()-Circle_Radius)
-		self.pen.pendown()
-		self.pen.circle(Circle_Radius)
-		self.pen.penup()
-		self.pen.sety(self.pen.ycor()+Circle_Radius)
-		self.populate_initial_commands()
+		# self.pen.speed("fastest")
+		#self.pen.pencolor("red")
+		#self.pen.penup()
+		#self.pen.sety(self.pen.ycor()-Circle_Radius)
+		#self.pen.pendown()
+		#self.pen.circle(Circle_Radius)
+		#self.pen.penup()
+		#self.pen.sety(self.pen.ycor()+Circle_Radius)
+		#self.populate_initial_commands()
 		room_name = "Dead end"
 		new_room = gmap.GRoom(room_name)
 		self.game_map.update_current(new_room)
-		self.game_loop()
-		self.game_map.print_map()
-		while True:
-			self.traverse_map()
+		#self.game_loop()
+		#self.game_map.print_map()
+		#while True:
+			#self.traverse_map()
+		self.solve_game()
 		time.sleep(10)
 
-
+# Uncomment inner to run normally
 def main():
 	instr = raw_input("Enter instructions for solver: ")
-	wn = turtle.Screen()
+	# wn = turtle.Screen()
 	game_map = gmap.GameMap()
 	game_map.print_map()
 	Tagsolver = Solver(instr)
