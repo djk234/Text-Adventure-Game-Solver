@@ -31,6 +31,7 @@ class GRoom(object):
 		self.items = []
 		self.mapped = False
 		self.traversed = False
+		self.description = None
 		self.pos = []
 
 	# Procedure that adds a new adjency edge to the room
@@ -70,6 +71,14 @@ class GRoom(object):
 		print(self.mapped)
 		print(self.pos)
 		print("")
+
+	# Sets room description
+	def set_description(self, description):
+
+		# Split on newline, which should dilineate the command from
+		# the description.
+		cmd_index = description.find("\n")
+		self.description = description[cmd_index:]
 
 
 # Class for the Game Map. The Map itself is constructed by the solver
