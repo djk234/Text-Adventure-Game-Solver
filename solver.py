@@ -3,7 +3,6 @@
 # Will Ronchetti wrr33@cornell.edu
 # David Karabinos djk234@cornell.edu
 
-
 import subprocess
 import time
 import os
@@ -96,6 +95,30 @@ class Solver(object):
 		self.commands[Commands[2]] = []
 		self.commands[Commands[3]] = []
 
+	# Attempts an action associated with an item. If it succeeds, add the (item,action)
+	# pair to the item action dictionary
+	def try_action(self, item, action):
+		response = self.send_command(action)
+		if "don't understand" in response:
+			print(action + " not possible.")
+			return
+		else:
+			print(action + " suceeded!")
+			self.insert_item_action(item, action)
+
+	# Inserts a new item/action pair into the item action dictionary
+	def insert_item_action(self, item, action):
+		self.item_actions[item] = action
+
+	# Performs the action associated with an item
+	def perform_item_action(self, item):
+		self.send_command(self.item_actions[item])
+
+	# Performs all item actions
+	def do_all_actions(self):
+		for action in self.item_actions.itervalues():
+			self.send_command(action)
+
 	# Searches the description of the room for any possible items, we need to
 	# make sure it is only taking available things (ie. read the response of the take)
 	def search_possible_items(self, description):
@@ -153,6 +176,7 @@ class Solver(object):
 		self.take_drop(response)
 		self.last_command = cmd
 
+	# Uses turtle GUI to draw a new room 
 	def draw_new_room(self, index, draw_circles, name):
 		self.pen.pendown()
 		self.pen.setheading(Headings[index])
