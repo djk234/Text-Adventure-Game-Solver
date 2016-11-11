@@ -11,6 +11,7 @@ import random
 import gmap
 import turtle
 import Solution
+import nltk
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
 import pexpect
@@ -132,13 +133,15 @@ class Solver(object):
 
 	# Will take items and add them to the Solver's inventory
 	def take(self, response):
-		words = response.split()
-		for word in words:
-			response = self.send_command("take "+word)
-			print response
-			if ("Taken." in response):
-				new_item = gmap.GItem(word,self.game_map.get_current().name)
-				self.inventory.append(new_item)
+		words = nltk.word_tokenize(response)
+		tokens = nltk.pos_tag(words, tagset='universal')
+		for (a,b) in tokens:
+			if b == "NOUN":
+				response = self.send_command("take "+a)
+				print response
+				if ("Taken." in response):
+					new_item = gmap.GItem(a,self.game_map.get_current().name)
+					self.inventory.append(new_item)
 
 	# Drops all items currently in the inventory, and readds them back if possible.
 	def drop(self, item):
@@ -209,11 +212,13 @@ class Solver(object):
 				response = self.send_command("go "+Directions[i])
 				print(response)
 				last_command = "go "+Directions[i]
+				description = response[len("go "+Directions[i]):]
 				if ("You can't go that way." not in response and "You don't have a key that can open this door." not in response):
 					words = response.split("\r\n")
 					room_name = words[1]
 					if (not self.game_map.check_adj_room(self.game_map.get_current(),room_name)):
 						new_room = gmap.GRoom(room_name)
+						new_room.set_description(description)
 						new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
 						self.game_map.get_current().insert_adjency(new_room,Directions[i])
 						self.game_map.add_room(self.game_map.get_current())
@@ -321,20 +326,21 @@ class Solver(object):
 	# Uncomment to run normally and then comment out self.solve_game() call
 	def spawn_solver(self):
 		print "Starting..."
-		#self.initialize_gui()
+		self.initialize_gui()
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
 		self.engine.expect([">"])
 		print(self.engine.before)
 		self.populate_initial_commands()
 		room_name = "Dead end"
 		new_room = gmap.GRoom(room_name)
-		#self.game_map.update_current(new_room)
-		#self.game_loop()
-		#self.game_map.print_map()
-		#while True:
-		#	self.traverse_map()
+		new_room.set_description(self.engine.before)
+		self.game_map.update_current(new_room)
+		self.game_loop()
+		self.game_map.print_map()
+		while True:
+			self.traverse_map()
 
 		# Runs the solution solver
-		self.solve_game()
+		# self.solve_game()
 
 		time.sleep(10)

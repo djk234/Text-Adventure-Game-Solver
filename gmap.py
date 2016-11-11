@@ -31,13 +31,17 @@ class GRoom(object):
 		self.items = []
 		self.mapped = False
 		self.traversed = False
-		self.description = None
+		self.description = ""
 		self.pos = []
 
 	# Procedure that adds a new adjency edge to the room
 	def insert_adjency(self, new_room, direction):
 		self.adjencies[direction] = new_room
 
+	# Sets the description for this room
+	def set_description(self, description):
+		self.description = description
+		
 	# Returns a list of the directions that can be moved to from the current room.
 	# Since self.adjencies is a hashmap, and we use the direcitons as keys, we can
 	# simply return a list of the keys in the hashmap.
