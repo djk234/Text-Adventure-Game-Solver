@@ -19,6 +19,7 @@ engine = None
 
 Circle_Radius = 10
 Path_Length = 50
+
 # A set of predefined commands that the solver would expect to be
 # in an arbitrary text adventure game.
 Commands = [
@@ -58,6 +59,7 @@ Opp_Directions = [
 
 Item_Actions = []
 
+Combination = "000"
 
 # Main class for the solver. It will store several pieces of information, such as:
 # 	1. Instructions passed in
@@ -155,7 +157,7 @@ class Solver(object):
 	# Sends the command and returns the response
 	def send_command(self, cmd):
 		self.engine.sendline(cmd)
-		self.engine.expect(">")
+		self.engine.expect([">",":"])
 		return self.engine.before
 
 	# Procedure that inputs a random command to the game
@@ -176,7 +178,7 @@ class Solver(object):
 		self.take_drop(response)
 		self.last_command = cmd
 
-	# Uses turtle GUI to draw a new room 
+	# Uses turtle GUI to draw a new room
 	def draw_new_room(self, index, draw_circles, name):
 		self.pen.pendown()
 		self.pen.setheading(Headings[index])
@@ -287,11 +289,20 @@ class Solver(object):
 
 	# Follows hard code instructions to win game
 	def solve_game(self):
-		commands = Hard_Code.split(", ")
+		commands = Solution.Hard_Code.split(", ")
 		print(commands)
 		for command in commands:
 			if (len(command) > 0):
-				response = self.send_command(command)
+				if (command == "xxx"):
+					response = self.send_command(Combination)
+				else:
+					response = self.send_command(command)
+					if "The combination is" in response:
+						print "RESPONSE ",
+						print response
+						Combination = response.split()[7][:3]
+						print "COMBINATION ",
+						print Combination
 				print response
 
 	# Performs initialization of turtle GUI
@@ -310,22 +321,20 @@ class Solver(object):
 	# Uncomment to run normally and then comment out self.solve_game() call
 	def spawn_solver(self):
 		print "Starting..."
-		self.initialize_gui()
+		#self.initialize_gui()
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
-		self.engine.expect([">",":"])
+		self.engine.expect([">"])
 		print(self.engine.before)
 		self.populate_initial_commands()
 		room_name = "Dead end"
 		new_room = gmap.GRoom(room_name)
-		self.game_map.update_current(new_room)
-		self.game_loop()
-		self.game_map.print_map()
-		while True:
-			self.traverse_map()
+		#self.game_map.update_current(new_room)
+		#self.game_loop()
+		#self.game_map.print_map()
+		#while True:
+		#	self.traverse_map()
 
 		# Runs the solution solver
-		# self.solve_game()
+		self.solve_game()
 
 		time.sleep(10)
-
-

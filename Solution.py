@@ -1,4 +1,4 @@
-# This is a hard coded solution to the dunnet game, used as a guide 
+# This is a hard coded solution to the dunnet game, used as a guide
 # for developing what we do.
 
 
@@ -20,8 +20,8 @@ Hard_Code = "get shovel, look shovel, e, e, dig, look, get cpu, look cpu, se, " 
 "put gold in urinal, flush, n, sleep, d, sw, e, u, dig, look, get "\
 "platinum, d, w, ne, u, s, put platinum in urinal, flush, n, d, sw, w, d, "\
 "e, get towel, look towel, d, s, s, s, look pc, put floppy in pc, reset, , "\
-"dir, type foo.txt => xxx (combination), exit, n, n, n, n, n, u, look box, "\
-"put key in box, u, u, ne, ne, get axe, d, n, w, xxx (combination), cut "\
+"dir, type foo.txt, exit, n, n, n, n, n, u, look box, "\
+"put key in box, u, u, ne, ne, get axe, d, n, w, xxx, cut "\
 "cable, exit, get key, e, n, get lamp, get license, get silver, w, put "\
 "silver in mail, n, n, e, e, e, e, e, get coins, get egg (in rooms 60 to "\
 "78), w, w, w, w, w, s, s, put egg in mail, put coins in mail, n, n, n, n, "\
