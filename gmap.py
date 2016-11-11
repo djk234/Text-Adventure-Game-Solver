@@ -10,6 +10,7 @@ class GItem(object):
 		self.name = ID
 		self.location = location
 		self.redeemed = False
+		self.actions = []
 
 	# Returns redeem status of item
 	def is_redeemed(self):
@@ -19,6 +20,30 @@ class GItem(object):
 	def redeem(self, location):
 		self.redeemed = True
 		self.location = location
+
+	# Attempts an action associated with an item. If it succeeds, add the (item,action)
+	# pair to the item action dictionary
+	def try_action(self, action):
+		response = self.send_command(action)
+		if "don't understand" in response:
+			print(action + " not possible.")
+			return
+		else:
+			print(action + " suceeded!")
+			self.insert_item_action(item, action)
+
+	# Inserts a new item/action pair into the item action dictionary
+	def insert_item_action(self):
+		self.item_actions[item] = action
+
+	# Performs the action associated with an item
+	def perform_item_action(self):
+		self.send_command(self.item_actions[item])
+
+	# Performs all item actions
+	def do_all_actions(self):
+		for action in self.item_actions.itervalues():
+			self.send_command(action)
 
 # Class for room. Contains the room ID, a hashmap of tuples
 # (direction,room) of possible go commands, the items currently in the room
@@ -41,7 +66,7 @@ class GRoom(object):
 	# Sets the description for this room
 	def set_description(self, description):
 		self.description = description
-		
+
 	# Returns a list of the directions that can be moved to from the current room.
 	# Since self.adjencies is a hashmap, and we use the direcitons as keys, we can
 	# simply return a list of the keys in the hashmap.
