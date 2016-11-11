@@ -298,7 +298,7 @@ class Solver(object):
 		self.pen.penup()
 		self.pen.sety(self.pen.ycor()+Circle_Radius)
 
-    # Spawns the solver and game subprocess using pexpect
+  # Spawns the solver and game subprocess using pexpect
 	# Uncomment to run normally and then comment out self.solve_game() call
 	def spawn_solver(self):
 		print "Starting..."

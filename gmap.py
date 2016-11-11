@@ -103,7 +103,6 @@ class GRoom(object):
 
 	# Sets room description
 	def set_description(self, description):
-
 		# Split on newline, which should dilineate the command from
 		# the description.
 		cmd_index = description.find("\n")
@@ -150,6 +149,7 @@ class GameMap(object):
 				return self.room_list[index]
 			else:
 				return None
+				
 	# Updates current room to room
 	def update_current(self, new_room):
 		self.current_room = new_room
