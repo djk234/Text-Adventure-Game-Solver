@@ -11,6 +11,7 @@ class GItem(object):
 		self.location = location
 		self.redeemed = False
 		self.actions = []
+		self.verb_parsed = False
 
 	# Returns redeem status of item
 	def is_redeemed(self):
@@ -149,7 +150,7 @@ class GameMap(object):
 				return self.room_list[index]
 			else:
 				return None
-				
+
 	# Updates current room to room
 	def update_current(self, new_room):
 		self.current_room = new_room

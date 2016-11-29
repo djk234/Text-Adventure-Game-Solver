@@ -12,6 +12,7 @@ import gmap
 import turtle
 import Solution
 import nltk
+import htmlparse
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
 import pexpect
@@ -232,9 +233,26 @@ class Solver(object):
 		self.direction_loop()
 		for item in self.inventory:
 			self.drop(item)
+			# Going to html parse and look at the associated verbs
+			verbs = item.actions
+			# if we haven't tested the verbs
+			if len(item.actions) == 0 and not item.verb_parsed:
+				verbs = htmlparse.query_word(item.name)
+				item.verb_parsed = True
+			for verb in verbs:
+				response = self.send_command(verb)
+				print response
+				if ("I don't understand that." not in response):
+					if (verb not in item.actions):
+						item.actions.append(verb)
+					response = self.send_command("look")
+					print response
+					self.take(response)
+			print item.name + ": ",item.actions
 		old_room = self.game_map.get_current()
 		for direction in old_room.get_directions():
 			if (not self.game_map.get_current().adjencies[direction].traversed):
+				print("Direction: "+direction)
 				response = self.send_command("go "+direction)
 				self.pen.setheading(Headings[Directions.index(direction)])
 				self.pen.forward(Path_Length)
