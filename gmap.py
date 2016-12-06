@@ -68,6 +68,13 @@ class GRoom(object):
 	def set_description(self, description):
 		self.description = description
 
+	# Returns the direction associated with the target room
+	def get_target_room_direction(self, target_room):
+		for direction in self.get_directions():
+			if self.adjencies[direction] == target_room:
+				return direction
+		return None
+
 	# Returns a list of the directions that can be moved to from the current room.
 	# Since self.adjencies is a hashmap, and we use the direcitons as keys, we can
 	# simply return a list of the keys in the hashmap.

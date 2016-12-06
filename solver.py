@@ -115,8 +115,8 @@ class Solver(object):
 		for (a,b) in tokens:
 			if b == "NOUN":
 				response = self.send_command("take "+a)
-				print response
 				if ("Taken." in response):
+					print response
 					new_item = gmap.GItem(a,self.game_map.get_current().name)
 					self.inventory.append(new_item)
 
@@ -137,7 +137,7 @@ class Solver(object):
 	# Sends the command and returns the response
 	def send_command(self, cmd):
 		self.engine.sendline(cmd)
-		self.engine.expect([">",":"])
+		self.engine.expect([">"])
 		return self.engine.before
 
 	# Procedure that inputs a random command to the game
@@ -184,53 +184,45 @@ class Solver(object):
 
 	# Loops through the available directions
 	def direction_loop(self):
+		# Checks directions
 		for i in range (len(Directions)):
-			if (Directions[i] not in self.game_map.get_current().adjencies):
+			self.game_map.get_current().print_room()
+			# If this direction is not already mapped in the adjacency
+			if (Directions[i] not in self.game_map.get_current().adjencies and not (Directions[i] == "south" and self.game_map.get_current().name == "Old Building hallway")):
 				response = self.send_command("go "+Directions[i])
 				print(response)
 				last_command = "go "+Directions[i]
 				description = response[len("go "+Directions[i]):]
+				# If the command resulted in you moving to a new room
 				if ("You can't go that way." not in response and "You don't have a key that can open this door." not in response):
 					words = response.split("\r\n")
 					room_name = words[1]
-					if (not self.game_map.check_adj_room(self.game_map.get_current(),room_name)):
-						new_room = gmap.GRoom(room_name)
-						new_room.set_description(description)
-						new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
-						self.game_map.get_current().insert_adjency(new_room,Directions[i])
-						self.game_map.add_room(self.game_map.get_current())
-						draw = self.game_map.add_room(new_room)
-						self.draw_new_room(i,draw,room_name)
-						response = self.send_command("go "+Opp_Directions[i])
-						print(response)
-						last_command = "go "+Opp_Directions[i]
-					else:
-						self.game_map.get_current().print_room()
-						self.pen.setpos(self.game_map.get_current().pos[0],self.game_map.get_current().pos[1])
-						response = self.send_command("go northeast")
-						print(response)
-						last_command = "go northeast"
+					# If this new room was not already mapped in this room's adjacency
+					#if (not self.game_map.check_adj_room(self.game_map.get_current(),room_name)):
+					new_room = gmap.GRoom(room_name)
+					new_room.set_description(description)
+					new_room.insert_adjency(self.game_map.get_current(),Opp_Directions[i])
+					self.game_map.get_current().insert_adjency(new_room,Directions[i])
+					self.game_map.add_room(self.game_map.get_current())
+					draw = self.game_map.add_room(new_room)
+					self.draw_new_room(i,draw,room_name)
+					response = self.send_command("go "+Opp_Directions[i])
+					print(response)
+					last_command = "go "+Opp_Directions[i]
+					# If this new room was already mapped in this room's adjacency
+					#else:
+					#	self.game_map.get_current().insert_adjency(self.game_map.get_room(room_name),Directions[i])
+					#	repeat_room = self.game_map.get_current().adjencies[Directions[i]]
+					#	return_direction = repeat_room.get_target_room_direction(self.game_map.get_current())
+					#	response = self.send_command("go "+return_direction)
+					#	print(response)
+					#	last_command = "go "+return_direction
+					#	self.pen.setpos(self.game_map.get_current().pos[0],self.game_map.get_current().pos[1])
 
-	# Sends sequential moves to find neighboring rooms
-	def sequential_command(self):
-		# Initial "look" to get the name of the room (should be unnecessary)
-		response = self.send_command("look")
-		print(response)
-		self.last_command = "look"
-		self.take(response)
-		for item in self.inventory:
-			self.drop(item)
-		# Will loop through the directions to find neighbor rooms
-		self.game_map.get_current().set_mapped()
-		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
-		self.direction_loop()
 
-	# Traverses the map and tries dropping items everywhere
-	def traverse_map(self):
-		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
-		self.game_map.get_current().set_mapped()
-		self.game_map.get_current().traversed = True
-		self.direction_loop()
+	# Tests if dropping items work and looks up commands for the items
+	# in your inventory
+	def item_loop(self):
 		for item in self.inventory:
 			self.drop(item)
 			# Going to html parse and look at the associated verbs
@@ -248,11 +240,30 @@ class Solver(object):
 					response = self.send_command("look")
 					print response
 					self.take(response)
-			print item.name + ": ",item.actions
+
+	# Sends sequential moves to find neighboring rooms
+	def sequential_command(self):
+		# Initial "look" to get the name of the room (should be unnecessary)
+		response = self.send_command("look")
+		print(response)
+		self.last_command = "look"
+		self.take(response)
+		self.item_loop()
+		# Will loop through the directions to find neighbor rooms
+		self.game_map.get_current().set_mapped()
+		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
+		self.direction_loop()
+
+	# Traverses the map and tries dropping items everywhere
+	def traverse_map(self):
+		self.game_map.get_current().set_pos(self.pen.xcor(),self.pen.ycor())
+		self.game_map.get_current().set_mapped()
+		self.game_map.get_current().traversed = True
+		self.direction_loop()
+		self.item_loop()
 		old_room = self.game_map.get_current()
 		for direction in old_room.get_directions():
 			if (not self.game_map.get_current().adjencies[direction].traversed):
-				print("Direction: "+direction)
 				response = self.send_command("go "+direction)
 				self.pen.setheading(Headings[Directions.index(direction)])
 				self.pen.forward(Path_Length)
@@ -278,7 +289,6 @@ class Solver(object):
 				print(response)
 				self.game_map.update_current(self.game_map.get_current().adjencies[direction])
 				self.game_loop()
-				self.game_map.print_map()
 				opp_direction = Opp_Directions[Directions.index(direction)]
 				response = self.send_command("go "+opp_direction)
 				self.pen.setheading(Headings[Directions.index(opp_direction)])
