@@ -13,6 +13,7 @@ import turtle
 import Solution
 import nltk
 import htmlparse
+import re
 
 # Need to download pexpect here: https://pexpect.readthedocs.io/en/stable/index.html
 import pexpect
@@ -29,6 +30,9 @@ Commands = [
 	"go",
 	"take",
 	"drop",
+	"put",
+	"type",
+	"flush",
 	"score"
 ]
 
@@ -91,6 +95,8 @@ class Solver(object):
 		self.commands = dict()
 		self.directions = Directions
 		self.inventory = []
+		self.other_items = [] # associated nouns with the items we have
+		self.proper_nouns = []
 
     # Populates commands with the commands themselves and the initial possible inputs
 	def populate_initial_commands(self):
@@ -107,6 +113,29 @@ class Solver(object):
 			item = words[words.index("here.")-1]
 			if (item not in self.commands["take"]):
 				self.commands["take"].append(item)
+
+	# Checks to see if this item's associated nouns can be found in this description
+	def check_nouns(self, response, item):
+		words = re.findall(r"[\w']+", response.lower())
+		other_names = (item.name for item in self.other_items)
+		for noun in item.nouns:
+			# Check to see if this associated noun is one of the words  and it isn't already found
+			if noun in words and noun not in other_names and noun != item.name:
+				new_item = gmap.GItem(noun,self.game_map.get_current().name)
+				new_item.nouns.append(item.name)
+				new_item.actions = htmlparse.query_word(noun)[0]
+				print new_item.actions
+				new_item.parsed = True
+				self.other_items.append(new_item)
+				response = self.send_command("put "+item.name+" in "+noun)
+				print response
+				for verb in new_item.actions:
+					response = self.send_command_new(verb)
+					print response
+					if "I don't understand" in response:
+						continue
+					else:
+						break
 
 	# Will take items and add them to the Solver's inventory
 	def take(self, response):
@@ -191,11 +220,10 @@ class Solver(object):
 	def direction_loop(self):
 		# Checks directions
 		for i in range (len(Directions)):
-			self.game_map.get_current().print_room()
 			# If this direction is not already mapped in the adjacency
 			if (Directions[i] not in self.game_map.get_current().adjencies and not (Directions[i] == "south" and self.game_map.get_current().name == "Old Building hallway")):
 				response = self.send_command("go "+Directions[i])
-				print(response)
+				print response
 				last_command = "go "+Directions[i]
 				description = response[len("go "+Directions[i]):]
 				# If the command resulted in you moving to a new room
@@ -230,6 +258,7 @@ class Solver(object):
 	def item_loop(self):
 		for item in self.inventory:
 			self.drop(item)
+			self.check_nouns(self.game_map.get_current().description,item)
 			# Going to html parse and look at the associated verbs and nouns
 			verbs = item.actions
 			# if we haven't tested the verbs

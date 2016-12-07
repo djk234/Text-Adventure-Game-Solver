@@ -69,10 +69,6 @@ class GRoom(object):
 	def insert_adjency(self, new_room, direction):
 		self.adjencies[direction] = new_room
 
-	# Sets the description for this room
-	def set_description(self, description):
-		self.description = description
-
 	# Returns the direction associated with the target room
 	def get_target_room_direction(self, target_room):
 		for direction in self.get_directions():
