@@ -11,7 +11,9 @@ class GItem(object):
 		self.location = location
 		self.redeemed = False
 		self.actions = []
+		self.nouns = []
 		self.verb_parsed = False
+		self.noun_parsed = False
 
 	# Returns redeem status of item
 	def is_redeemed(self):
@@ -34,8 +36,12 @@ class GItem(object):
 			self.insert_item_action(item, action)
 
 	# Inserts a new item/action pair into the item action dictionary
-	def insert_item_action(self):
+	def insert_item_action(self, action):
 		self.item_actions[item] = action
+
+	# Inserts a new item/noun pair into the item noun dictionary
+	def insert_item_noun(self, noun):
+		self.item_nouns[item] = noun
 
 	# Performs the action associated with an item
 	def perform_item_action(self):

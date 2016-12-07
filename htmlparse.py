@@ -5,15 +5,15 @@ import subprocess
 
 # Queries a word to the website. Returns a list of verbs associated with
 # that noun.
-def query_word(noun):
+def query_verbs(noun):
 
 	# First, curl the website for the noun
-	subprocess.call(["curl", 
+	subprocess.call(["curl",
 		"https://wordassociations.net/en/words-associated-with/" + noun + "?start=0", "-o",
 			"curl-output.txt"])
 
 	# Open up the file
-	with open("curl-output.txt", 'r') as f: 
+	with open("curl-output.txt", 'r') as f:
 
 		# Splice this thing up. First, cut out everything prior to the verb section.
 		# then, cut everything after the end of the verb section. We do this by looking
@@ -24,10 +24,10 @@ def query_word(noun):
 		ind2 = html.find("b-social-share__icon")
 		verb_html = html[ind1:ind2]
 
-		# Now, we split on href and filter out some more crap by dropping the first 
+		# Now, we split on href and filter out some more crap by dropping the first
 		# and last elements.
 		splice1 = verb_html.split("href")
-		verb_splice = splice1[1: len(splice1)-1] 
+		verb_splice = splice1[1: len(splice1)-1]
 
 		# We now are very close to what we want. We splice each element again,
 		# producing the final list based on the length of href and the location
@@ -37,11 +37,46 @@ def query_word(noun):
 		for v in verb_splice:
 			ind1 = verb_splice[i].find("-with/") + 6
 			ind2 = verb_splice[i].find(">")
-			verbs.append((verb_splice[i])[ind1:ind2].strip('"'))
+			verbs.append((verb_splice[i])[ind1:ind2].strip('"').lower())
 			i+=1
-			
+
 	return verbs
 
-		
+# Queries a word to the website. Returns a list of nouns associated with
+# that noun.
+def query_nouns(noun):
 
+	# First, curl the website for the noun
+	subprocess.call(["curl",
+		"https://wordassociations.net/en/words-associated-with/" + noun + "?start=0", "-o",
+			"curl-output.txt"])
 
+	# Open up the file
+	with open("curl-output.txt", 'r') as f:
+
+		# Splice this thing up. First, cut out everything prior to the verb section.
+		# then, cut everything after the end of the verb section. We do this by looking
+		# for a social media token that always appear after all of the word outputs.
+		# Verbs are last, so this makes our job relatively simple.
+		html = f.read()
+		ind1 = html.find("NOUN-SECTION")
+		ind2 = html.find("ADJECTIVE-SECTION")
+		noun_html = html[ind1:ind2]
+
+		# Now, we split on href and filter out some more crap by dropping the first
+		# and last elements.
+		splice1 = noun_html.split("href")
+		noun_splice = splice1[1: len(splice1)-1]
+
+		# We now are very close to what we want. We splice each element again,
+		# producing the final list based on the length of href and the location
+		# of the token </a>.
+		i = 0
+		nouns = []
+		for n in noun_splice:
+			ind1 = noun_splice[i].find("-with/") + 6
+			ind2 = noun_splice[i].find(">")
+			nouns.append((noun_splice[i])[ind1:ind2].strip('"').lower())
+			i+=1
+
+	return nouns

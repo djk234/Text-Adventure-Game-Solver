@@ -140,6 +140,11 @@ class Solver(object):
 		self.engine.expect([">"])
 		return self.engine.before
 
+	def send_command_new(self, cmd):
+		self.engine.sendline(cmd)
+		self.engine.expect([">",":","ftp> "])
+		return self.engine.before
+
 	# Procedure that inputs a random command to the game
 	def random_command(self):
 		cmd1 = random.choice(self.commands.keys())
@@ -229,7 +234,7 @@ class Solver(object):
 			verbs = item.actions
 			# if we haven't tested the verbs
 			if len(item.actions) == 0 and not item.verb_parsed:
-				verbs = htmlparse.query_word(item.name)
+				verbs = htmlparse.query_verbs(item.name)
 				item.verb_parsed = True
 			for verb in verbs:
 				response = self.send_command(verb)
@@ -240,6 +245,13 @@ class Solver(object):
 					response = self.send_command("look")
 					print response
 					self.take(response)
+			# Going to html parse and look at the associated nouns
+			nouns = item.nouns
+			if len(item.nouns) == 0 and not item.noun_parsed:
+				item.nouns = htmlparse.query_nouns(item.name)
+				item.noun_parsed = True
+				print item.nouns
+
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
@@ -303,9 +315,9 @@ class Solver(object):
 		for command in commands:
 			if (len(command) > 0):
 				if (command == "xxx"):
-					response = self.send_command(Combination)
+					response = self.send_command_new(Combination)
 				else:
-					response = self.send_command(command)
+					response = self.send_command_new(command)
 					if "The combination is" in response:
 						print "RESPONSE ",
 						print response
@@ -345,6 +357,6 @@ class Solver(object):
 			self.traverse_map()
 
 		# Runs the solution solver
-		# self.solve_game()
+		#self.solve_game()
 
 		time.sleep(10)
