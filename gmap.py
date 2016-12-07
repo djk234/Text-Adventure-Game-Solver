@@ -12,8 +12,7 @@ class GItem(object):
 		self.redeemed = False
 		self.actions = []
 		self.nouns = []
-		self.verb_parsed = False
-		self.noun_parsed = False
+		self.parsed = False
 
 	# Returns redeem status of item
 	def is_redeemed(self):

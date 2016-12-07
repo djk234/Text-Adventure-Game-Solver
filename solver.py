@@ -230,12 +230,14 @@ class Solver(object):
 	def item_loop(self):
 		for item in self.inventory:
 			self.drop(item)
-			# Going to html parse and look at the associated verbs
+			# Going to html parse and look at the associated verbs and nouns
 			verbs = item.actions
 			# if we haven't tested the verbs
-			if len(item.actions) == 0 and not item.verb_parsed:
-				verbs = htmlparse.query_verbs(item.name)
-				item.verb_parsed = True
+			if len(item.actions) == 0 and not item.parsed:
+				associated = htmlparse.query_word(item.name)
+				verbs = associated[0]
+				item.nouns = associated[1]
+				item.parsed = True
 			for verb in verbs:
 				response = self.send_command(verb)
 				print response
@@ -245,13 +247,6 @@ class Solver(object):
 					response = self.send_command("look")
 					print response
 					self.take(response)
-			# Going to html parse and look at the associated nouns
-			nouns = item.nouns
-			if len(item.nouns) == 0 and not item.noun_parsed:
-				item.nouns = htmlparse.query_nouns(item.name)
-				item.noun_parsed = True
-				print item.nouns
-
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
