@@ -318,6 +318,25 @@ class Solver(object):
 						print n_item.name
 						self.game_map.get_current().original_items.append(n_item)
 
+	# Performs a look command, tokenizes the response looking for poper nouns
+	# and other nouns, then looks at the nouns and tokenizes them as well.
+	def tokenized_look(self):
+		response = self.send_command("look")
+		self.last_command = "look"
+		words = nltk.word_tokenize(response)
+		tokens = nltk.pos_tag(words)
+		for (a,b) in tokens:
+			if b == "NP":
+				self.proper_nouns.append(a.lower())
+			elif b == "N":
+				response = self.send_command("look " + a)
+				if ("I don't know what that is.") not in response:
+					_words = nltk.word_tokenize(response)
+					tokenized_words = nltk.pos_tog(_words)
+					for (c,d) in tokenized_words:
+						if d == "NP":
+							self.proper_nouns.append(c.lower())
+
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
 		# Initial "look" to get the name of the room (should be unnecessary)
