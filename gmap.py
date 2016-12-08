@@ -60,6 +60,7 @@ class GRoom(object):
 		self.name = name
 		self.adjencies = dict()
 		self.items = []
+		self.original_items = []
 		self.mapped = False
 		self.traversed = False
 		self.description = ""
@@ -105,7 +106,7 @@ class GRoom(object):
 		directions = self.get_directions()
 		for direction in directions:
 			print(direction+": "+self.adjencies[direction].name)
-		print(self.items)
+		print(self.original_items)
 		print(self.mapped)
 		print(self.pos)
 		print("")

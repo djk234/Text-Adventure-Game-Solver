@@ -19,7 +19,6 @@ import re
 import pexpect
 
 engine = None
-
 Circle_Radius = 10
 Path_Length = 50
 
@@ -36,6 +35,30 @@ Commands = [
 	"score"
 ]
 
+Unix_Commands = [
+	"ls",
+	"ftp",
+	"echo",
+	"exit",
+	"cd",
+	"pwd",
+	"rlogin",
+	"uncompress",
+	"cat",
+	"zippy"
+]
+
+FTP_Commands = [
+	"send",
+	"binary",
+	"ascii",
+	"quit"
+]
+
+PC_Commands = [
+	"dir",
+	"type foo.txt"
+]
 # A set of predefined directions that would be expected in a game.
 Directions = [
 	"north",
@@ -85,6 +108,9 @@ class Solver(object):
 	# done when it is "spawned" as a subprocess.
 	def __init__(self, instructions):
 		self.instructions = instructions
+		self.solution_file = None
+		self.last_solution = ""
+		self.new_solution = ""
 		self.pen = None
 		self.engine = None
 		self.game_map = None
@@ -104,6 +130,10 @@ class Solver(object):
 		self.commands[Commands[1]] = Directions
 		self.commands[Commands[2]] = []
 		self.commands[Commands[3]] = []
+
+	# Writes the command to the solution file
+	def write_to_solution(self, cmd):
+		self.solution_file.write(cmd+"\n")
 
 	# Searches the description of the room for any possible items, we need to
 	# make sure it is only taking available things (ie. read the response of the take)
@@ -137,19 +167,23 @@ class Solver(object):
 					else:
 						break
 
-	# Will take items and add them to the Solver's inventory
+	# Will take items and add them to the Solver's inventory, returns a list of items found in this room
 	def take(self, response):
 		words = nltk.word_tokenize(response)
 		tokens = nltk.pos_tag(words, tagset='universal')
+		items = []
 		for (a,b) in tokens:
 			if b == "NOUN":
 				response = self.send_command("take "+a)
 				if ("Taken." in response):
 					print response
+					self.write_to_solution("take "+a)
 					new_item = gmap.GItem(a,self.game_map.get_current().name)
+					items.append(new_item)
 					self.inventory.append(new_item)
+		return items
 
-	# Drops all items currently in the inventory, and readds them back if possible.
+	# Drops all items currently in the inventory, and re-adds them back if possible.
 	def drop(self, item):
 		response = self.send_command("drop "+item.name)
 		print response
@@ -161,7 +195,10 @@ class Solver(object):
 			response = self.send_command("look")
 			print response
 			self.inventory.remove(item)
-			self.take(response)
+			original_items = self.take(response)
+			for n_item in original_items:
+				print n_item.name
+				self.game_map.get_current().original_items.append(n_item)
 
 	# Sends the command and returns the response
 	def send_command(self, cmd):
@@ -267,6 +304,7 @@ class Solver(object):
 				verbs = associated[0]
 				item.nouns = associated[1]
 				item.parsed = True
+			# testing the verbs and removes any ones that don't work
 			for verb in verbs:
 				response = self.send_command(verb)
 				print response
@@ -275,7 +313,10 @@ class Solver(object):
 						item.actions.append(verb)
 					response = self.send_command("look")
 					print response
-					self.take(response)
+					original_items = self.take(response)
+					for n_item in original_items:
+						print n_item.name
+						self.game_map.get_current().original_items.append(n_item)
 
 	# Sends sequential moves to find neighboring rooms
 	def sequential_command(self):
@@ -283,7 +324,10 @@ class Solver(object):
 		response = self.send_command("look")
 		print(response)
 		self.last_command = "look"
-		self.take(response)
+		original_items = self.take(response)
+		for item in original_items:
+			print item.name
+			self.game_map.get_current().original_items.append(item)
 		self.item_loop()
 		# Will loop through the directions to find neighbor rooms
 		self.game_map.get_current().set_mapped()
@@ -366,6 +410,11 @@ class Solver(object):
 	# Uncomment to run normally and then comment out self.solve_game() call
 	def spawn_solver(self):
 		print "Starting..."
+		f = open("solution.txt","r+")
+		self.solution_file = f
+	 	self.last_solution = f.read()
+		if len(self.last_solution) == 0:
+			print "New"
 		self.initialize_gui()
 		self.engine = pexpect.spawn('emacs RET -batch -l dunnet')
 		self.engine.expect([">"])
